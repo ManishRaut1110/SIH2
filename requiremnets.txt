@@ -1,0 +1,5 @@
+Libraries:
+-Matplotlib
+-Plotly
+-Pandas
+-Streamlit
