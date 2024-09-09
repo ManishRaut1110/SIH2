@@ -1,15 +1,24 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from geopy.geocoders import Nominatim
 import folium
+from geopy.geocoders import Nominatim
 from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 import ast
+from pymongo import MongoClient
+
+geolocator = Nominatim(user_agent="geoapiExercises")
+
+mongo_client = MongoClient("mongodb://localhost:27017/")
+db = mongo_client["sih"]
+collection = db["disasterDataset"]
+
+data = list(collection.find({}))
+df = pd.DataFrame(data)
 
 # Load the dataset
-df = pd.read_csv("updated_with_lat_lon.csv")
-geolocator = Nominatim(user_agent="geoapiExercises")
+# df = pd.read_csv("updated_with_lat_lon.csv")
 
 # CSS for improved styling
 st.markdown("""
@@ -127,7 +136,8 @@ if nav == "Heatmap":
     st.markdown('<h1 class="header center-text">Disaster Heatmap</h1>', unsafe_allow_html=True)
     
     # Parsing extracted_locations as actual lists of dictionaries
-    df['extracted_locations'] = df['extracted_locations'].apply(ast.literal_eval)
+    df['extracted_locations'] = df['extracted_locations'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) and x != '' else [])
+
     
     # Dropdown to select disaster type
     disaster_types = df['disaster type'].unique()
