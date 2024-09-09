@@ -7,12 +7,16 @@ from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 import ast
 
+# Load the dataset
 df = pd.read_csv("updated_with_lat_lon.csv")
 geolocator = Nominatim(user_agent="geoapiExercises")
 
 # CSS for improved styling
 st.markdown("""
     <style>
+    body {
+        background-color: #f4f4f9; /* Light background color for the whole page */
+    }
     .center-text {
         text-align: center;
     }
@@ -21,34 +25,34 @@ st.markdown("""
         flex-direction: column;
         align-items: center;
     }
-    .sidebar .sidebar-content .css-1v3fvcr {
-        text-align: center;
-    }
-    .css-1v3fvcr {
-        margin: 0 auto;
-    }
     .header {
         color: #007acc;
-        font-size: 3rem; /* Increased font size for header */
+        font-size: 3rem;
         font-weight: bold;
+        margin-bottom: 1rem;
     }
     .section-title {
-        font-size: 2rem; /* Increased font size for section titles */
+        font-size: 2rem;
         color: #007acc;
         margin-top: 2rem;
+        margin-bottom: 1rem;
     }
     .chart-container {
         padding: 1rem;
-        background-color: #f0f2f6; /* Light background for the charts */
-        border-radius: 8px; /* Rounded corners for the chart containers */
-    }
-    body {
-        background-color: #e5e5e5; /* Background color for the whole page */
+        background-color: #ffffff; /* White background for the charts */
+        border-radius: 8px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Light shadow for a floating effect */
     }
     .text-large {
-        font-size: 1.25rem; /* Increased font size for large text elements */
+        font-size: 1.25rem;
     }
-
+    .heatmap-container {
+        margin-top: 1rem;
+    }
+    .st-ak {
+        gap: 0px;
+        align-content: center;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -72,13 +76,13 @@ if nav == "Dashboard":
         values=relevance_counts,
         names=relevance_counts.index,
         title='Relevant vs Not Relevant Tweets',
-        template="plotly_dark"  # Dark theme for better aesthetics
+        template="plotly_dark"
     )
     fig_pie.update_traces(textinfo='percent+label', pull=[0.1, 0.1])
     fig_pie.update_layout(
-        width=800,  # Adjust width
-        height=500, # Adjust height
-        margin=dict(l=20, r=20, t=30, b=20)  # Adjust margins
+        width=800,
+        height=500,
+        margin=dict(l=20, r=20, t=30, b=20)
     )
     st.plotly_chart(fig_pie, use_container_width=True)
 
@@ -90,12 +94,12 @@ if nav == "Dashboard":
         y=label_counts.values,
         title='Tweet Categories based on Label',
         labels={'x': 'Label', 'y': 'Count'},
-        template="plotly_dark"  # Dark theme for better aesthetics
+        template="plotly_dark"
     )
     fig_bar.update_layout(
-        width=800,  # Adjust width
-        height=500, # Adjust height
-        bargap=0.2  # Adjust spacing between bars
+        width=800,
+        height=500,
+        bargap=0.2
     )
     st.plotly_chart(fig_bar, use_container_width=True)
 
@@ -121,8 +125,10 @@ if nav == "Dataset":
 # Heatmap section
 if nav == "Heatmap":
     st.markdown('<h1 class="header center-text">Disaster Heatmap</h1>', unsafe_allow_html=True)
+    
     # Parsing extracted_locations as actual lists of dictionaries
     df['extracted_locations'] = df['extracted_locations'].apply(ast.literal_eval)
+    
     # Dropdown to select disaster type
     disaster_types = df['disaster type'].unique()
     selected_disaster = st.selectbox("Select Disaster Type", disaster_types)
@@ -142,18 +148,11 @@ if nav == "Heatmap":
         for loc in location_list:
             location_data.append([loc['latitude'], loc['longitude']])
 
-    # Create the Folium map
+    # Create the Folium map centered on the world
     m = folium.Map(location=[0, 0], zoom_start=2, control_scale=True)
 
-    # Add HeatMap with color markers for the selected disaster
-    for lat, lon in location_data:
-        folium.CircleMarker(
-            location=[lat, lon],
-            radius=5,
-            color=color_dict.get(selected_disaster, 'gray'),
-            fill=True,
-            fill_opacity=0.7
-        ).add_to(m)
+    # Add HeatMap for the selected disaster type
+    HeatMap(location_data, radius=10, blur=15, max_zoom=13).add_to(m)
 
     # Display the map in Streamlit
     st.markdown('<div class="heatmap-container">', unsafe_allow_html=True)
