@@ -2,8 +2,11 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from geopy.geocoders import Nominatim
+import folium
+from streamlit_folium import folium_static
+import ast
 
-df = pd.read_csv("updated_with_relevance.csv")
+df = pd.read_csv("updated_with_lat_lon.csv")
 geolocator = Nominatim(user_agent="geoapiExercises")
 
 # CSS for improved styling
@@ -47,16 +50,6 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# Function to geocode locations
-def geocode_location(location):
-    try:
-        loc = geolocator.geocode(location)
-        if loc:
-            return loc.latitude, loc.longitude
-        else:
-            return None, None
-    except Exception as e:
-        return None, None
 
 with st.sidebar:
     st.image("assets/Disaster Aggregation DELAYED.png", use_column_width=True)
@@ -126,34 +119,32 @@ if nav == "Dataset":
 
 # Heatmap section
 if nav == "Heatmap":
-    st.markdown('<h1 class="header center-text">Heatmap of Tweet Locations</h1>', unsafe_allow_html=True)
+    st.title('Disaster Heatmap')
 
-    if 'location' in df.columns:
-        # Create latitude and longitude columns
-        if 'tweet_lat' not in df.columns or 'tweet_lon' not in df.columns:
-            df['tweet_lat'], df['tweet_lon'] = zip(*df['location'].apply(geocode_location))
+    # Parsing extracted_locations as actual lists of dictionaries
+    df['extracted_locations'] = df['extracted_locations'].apply(ast.literal_eval)
 
-        # Drop rows where geocoding failed
-        df_geocoded = df.dropna(subset=['tweet_lat', 'tweet_lon'])
+    # Extracting location data for the heatmap
+    location_data = []
+    for location_list in df['extracted_locations']:
+        for loc in location_list:
+            location_data.append([loc['latitude'], loc['longitude']])
 
-        if not df_geocoded.empty:
-            # Plot the heatmap
-            fig_heatmap = px.density_mapbox(
-                df_geocoded, lat='tweet_lat', lon='tweet_lon', radius=10,
-                hover_name='text', mapbox_style="stamen-terrain",
-                title="Heatmap of Disaster Tweets",
-                template="plotly_dark"  # Dark theme for better aesthetics
-            )
-            fig_heatmap.update_layout(
-                width=800,  # Adjust width
-                height=500, # Adjust height
-                margin=dict(l=0, r=0, t=30, b=0)  # Adjust margins
-            )
-            st.plotly_chart(fig_heatmap, use_container_width=True)
-        else:
-            st.markdown('<p class="center-text text-large">No geocoded location data available.</p>', unsafe_allow_html=True)
-    else:
-        st.markdown('<p class="center-text text-large">Location data not available in the dataset.</p>', unsafe_allow_html=True)
+    # Create the Folium map
+    m = folium.Map(location=[0, 0], zoom_start=2)
+
+    # Add the points to the map
+    for lat, lon in location_data:
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=5,
+            fill=True,
+            color="red",
+            fill_opacity=0.6
+        ).add_to(m)
+
+    # Display the map in Streamlit
+    folium_static(m)
 
 # About Us section
 if nav == "About Us":
