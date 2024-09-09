@@ -48,15 +48,7 @@ st.markdown("""
     .text-large {
         font-size: 1.25rem; /* Increased font size for large text elements */
     }
-    .heatmap-container {
-        height: 600px; /* Height for the heatmap */
-        width: 1200px; /* Increased width for the heatmap */
-        border-radius: 8px; /* Rounded corners for the heatmap container */
-        background-color: #ffffff; /* White background for better contrast */
-        margin: 0 auto; /* Center the heatmap */
-        padding: 0; /* No padding around the heatmap */
-        margin-top: 10px; /* Margin-top to reduce the gap between the title and heatmap */
-    }
+
     </style>
     """, unsafe_allow_html=True)
 
@@ -129,21 +121,39 @@ if nav == "Dataset":
 # Heatmap section
 if nav == "Heatmap":
     st.markdown('<h1 class="header center-text">Disaster Heatmap</h1>', unsafe_allow_html=True)
-
     # Parsing extracted_locations as actual lists of dictionaries
     df['extracted_locations'] = df['extracted_locations'].apply(ast.literal_eval)
+    # Dropdown to select disaster type
+    disaster_types = df['disaster type'].unique()
+    selected_disaster = st.selectbox("Select Disaster Type", disaster_types)
 
-    # Extracting location data for the heatmap
+    # Define a color dictionary for different disaster types
+    color_dict = {
+        'Earthquake': 'red',
+        'Flood': 'blue',
+        'Tornado': 'green',
+        # Add more types as needed
+    }
+
+    # Extracting location data for the selected disaster type
+    filtered_df = df[df['disaster type'] == selected_disaster]
     location_data = []
-    for location_list in df['extracted_locations']:
+    for location_list in filtered_df['extracted_locations']:
         for loc in location_list:
             location_data.append([loc['latitude'], loc['longitude']])
 
     # Create the Folium map
     m = folium.Map(location=[0, 0], zoom_start=2, control_scale=True)
 
-    # Add HeatMap
-    HeatMap(location_data, radius=10, blur=15, max_zoom=13).add_to(m)
+    # Add HeatMap with color markers for the selected disaster
+    for lat, lon in location_data:
+        folium.CircleMarker(
+            location=[lat, lon],
+            radius=5,
+            color=color_dict.get(selected_disaster, 'gray'),
+            fill=True,
+            fill_opacity=0.7
+        ).add_to(m)
 
     # Display the map in Streamlit
     st.markdown('<div class="heatmap-container">', unsafe_allow_html=True)
