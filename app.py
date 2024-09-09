@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from geopy.geocoders import Nominatim
 import folium
+from folium.plugins import HeatMap
 from streamlit_folium import folium_static
 import ast
 
@@ -47,9 +48,17 @@ st.markdown("""
     .text-large {
         font-size: 1.25rem; /* Increased font size for large text elements */
     }
+    .heatmap-container {
+        height: 600px; /* Height for the heatmap */
+        width: 1200px; /* Increased width for the heatmap */
+        border-radius: 8px; /* Rounded corners for the heatmap container */
+        background-color: #ffffff; /* White background for better contrast */
+        margin: 0 auto; /* Center the heatmap */
+        padding: 0; /* No padding around the heatmap */
+        margin-top: 10px; /* Margin-top to reduce the gap between the title and heatmap */
+    }
     </style>
     """, unsafe_allow_html=True)
-
 
 with st.sidebar:
     st.image("assets/Disaster Aggregation DELAYED.png", use_column_width=True)
@@ -119,7 +128,7 @@ if nav == "Dataset":
 
 # Heatmap section
 if nav == "Heatmap":
-    st.title('Disaster Heatmap')
+    st.markdown('<h1 class="header center-text">Disaster Heatmap</h1>', unsafe_allow_html=True)
 
     # Parsing extracted_locations as actual lists of dictionaries
     df['extracted_locations'] = df['extracted_locations'].apply(ast.literal_eval)
@@ -131,20 +140,15 @@ if nav == "Heatmap":
             location_data.append([loc['latitude'], loc['longitude']])
 
     # Create the Folium map
-    m = folium.Map(location=[0, 0], zoom_start=2)
+    m = folium.Map(location=[0, 0], zoom_start=2, control_scale=True)
 
-    # Add the points to the map
-    for lat, lon in location_data:
-        folium.CircleMarker(
-            location=[lat, lon],
-            radius=5,
-            fill=True,
-            color="red",
-            fill_opacity=0.6
-        ).add_to(m)
+    # Add HeatMap
+    HeatMap(location_data, radius=10, blur=15, max_zoom=13).add_to(m)
 
     # Display the map in Streamlit
+    st.markdown('<div class="heatmap-container">', unsafe_allow_html=True)
     folium_static(m)
+    st.markdown('</div>', unsafe_allow_html=True)
 
 # About Us section
 if nav == "About Us":
